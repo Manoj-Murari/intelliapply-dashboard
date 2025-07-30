@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc; /* slate-50 */
+}
+
+.job-description-content, .cover-letter-content {
+  white-space: pre-wrap;
+}
+
+.kanban-column {
+  min-height: 200px;
+}
