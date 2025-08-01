@@ -5,7 +5,12 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+        // We add the Inter font family here for consistency across the app
+        fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+        },
+    },
   },
-plugins: [],
+  plugins: [],
 }

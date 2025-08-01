@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Briefcase, Building, Sparkles } from 'lucide-react';
+import { X, Briefcase, Building, Sparkles, ExternalLink } from 'lucide-react';
 
 export default function JobDetailsPanel({ job, setSelectedJob, activeProfile, onOpenTailorModal }) {
     if (!job) return null;
@@ -31,8 +31,8 @@ export default function JobDetailsPanel({ job, setSelectedJob, activeProfile, on
                     </div>
                 </div>
 
-                {/* Panel Footer with AI Button */}
-                <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex justify-between items-center">
+                {/* Panel Footer with AI and Apply Buttons */}
+                <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex justify-between items-center gap-4">
                     <div className="text-sm">
                         <p className="font-semibold">AI Analysis</p>
                         <div className="flex gap-2 mt-1">
@@ -45,14 +45,26 @@ export default function JobDetailsPanel({ job, setSelectedJob, activeProfile, on
                         </div>
                     </div>
                     
-                    {/* --- NEW: AI TAILORING BUTTON --- */}
-                    <button
-                        onClick={onOpenTailorModal}
-                        className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all"
-                    >
-                        <Sparkles className="w-5 h-5" />
-                        Tailor with AI
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onOpenTailorModal}
+                            className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all"
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            Tailor with AI
+                        </button>
+                        
+                        {/* --- NEW: APPLY NOW BUTTON --- */}
+                        <a
+                            href={job.job_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-sky-700 bg-sky-100 rounded-md hover:bg-sky-200 transition-all"
+                        >
+                            <ExternalLink className="w-5 h-5" />
+                            Apply Now
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
