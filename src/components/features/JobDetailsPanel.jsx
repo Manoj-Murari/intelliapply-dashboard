@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-function JobDetailsPanelContent({ job, setSelectedJob, onOpenTailorModal, onOpenCoverLetterModal }) {
+function JobDetailsPanelContent({ job, setSelectedJob, onOpenTailorModal, onOpenCoverLetterModal, onOpenApplicationHelper }) {
     const [activeTab, setActiveTab] = useState('description');
     const [notes, setNotes] = useState('');
     const [contacts, setContacts] = useState([]);
@@ -78,7 +78,7 @@ function JobDetailsPanelContent({ job, setSelectedJob, onOpenTailorModal, onOpen
     
     const handleAddToTracker = () => {
         if (!job?.id) return;
-        updateJobDetails(job.id, { is_tracked: true });
+        updateJobDetails(job.id, { is_tracked: true, status: 'Applied' });
         addNotification(`'${job.title}' added to your tracker!`, 'success');
     };
 
@@ -150,20 +150,26 @@ function JobDetailsPanelContent({ job, setSelectedJob, onOpenTailorModal, onOpen
                     )}
                 </div>
                 <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex justify-between items-center gap-4">
-                     <div className="flex items-center gap-2">
-                        {job.is_tracked ? (
-                             <span className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-emerald-700 bg-emerald-100 rounded-md">
-                                <CheckSquare className="w-5 h-5" /> Tracked
-                            </span>
-                        ) : (
-                            <button onClick={handleAddToTracker} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-slate-800 rounded-md hover:bg-slate-700 transition-all">
-                                <Plus className="w-5 h-5" /> Add to Tracker
-                            </button>
-                        )}
-                        <button onClick={onOpenTailorModal} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all"><Sparkles className="w-5 h-5" />Tailor Resume</button>
-                        <button onClick={onOpenCoverLetterModal} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all"><FileText className="w-5 h-5" />Generate Cover Letter</button>
-                    </div>
-                    <a href={job.job_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-sky-700 bg-sky-100 rounded-md hover:bg-sky-200 transition-all"><ExternalLink className="w-5 h-5" />Apply Now</a>
+                       <div className="flex items-center gap-2">
+                            {job.is_tracked ? (
+                                 <span className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-emerald-700 bg-emerald-100 rounded-md">
+                                     <CheckSquare className="w-5 h-5" /> Tracked
+                                </span>
+                            ) : (
+                                <button onClick={handleAddToTracker} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-slate-800 rounded-md hover:bg-slate-700 transition-all">
+                                    <Plus className="w-5 h-5" /> Add to Tracker
+                                </button>
+                            )}
+                            <button onClick={onOpenTailorModal} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all"><Sparkles className="w-5 h-5" />Tailor Resume</button>
+                            <button onClick={onOpenCoverLetterModal} className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all"><FileText className="w-5 h-5" />Generate Cover Letter</button>
+                        </div>
+                    {/* --- This is the critical change --- */}
+                    <button 
+                        onClick={onOpenApplicationHelper} 
+                        className="flex items-center justify-center gap-2 px-4 py-2 font-semibold text-sky-700 bg-sky-100 rounded-md hover:bg-sky-200 transition-all"
+                    >
+                        <ExternalLink className="w-5 h-5" />Apply Now
+                    </button>
                 </div>
             </div>
         </div>

@@ -16,7 +16,14 @@ export const useStore = create((set, get) => ({
     isTailorModalOpen: false,
     isCoverLetterModalOpen: false,
     isInterviewPrepModalOpen: false,
+    // --- NEW: State for Application Helper ---
+    isApplicationHelperOpen: false,
+
     channel: null,
+    isGeneratingPrep: false,
+    interviewPrepData: null,
+    interviewPrepError: null,
+
 
     // --- ACTIONS ---
 
@@ -28,7 +35,13 @@ export const useStore = create((set, get) => ({
     openCoverLetterModal: () => set({ isCoverLetterModalOpen: true }),
     closeCoverLetterModal: () => set({ isCoverLetterModalOpen: false }),
     openInterviewPrepModal: () => set({ isInterviewPrepModalOpen: true }),
-    closeInterviewPrepModal: () => set({ isInterviewPrepModalOpen: false }),
+    closeInterviewPrepModal: () => {
+        set({ isInterviewPrepModalOpen: false, interviewPrepData: null, interviewPrepError: null });
+    },
+    // --- NEW: Actions for Application Helper ---
+    openApplicationHelper: () => set({ isApplicationHelperOpen: true }),
+    closeApplicationHelper: () => set({ isApplicationHelperOpen: false }),
+
 
     // Notification Management
     addNotification: (message, type = 'success') => {
@@ -115,11 +128,55 @@ export const useStore = create((set, get) => ({
         }
     },
 
+    // AI Interview Prep Action
+    generateInterviewPrep: async (job, profile) => {
+        if (!job || !profile) {
+            set({ interviewPrepError: "A job and a profile must be selected." });
+            return;
+        }
+        set({ isGeneratingPrep: true, interviewPrepData: null, interviewPrepError: null });
+
+        try {
+            const response = await fetch('http://localhost:5001/api/interview-prep', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_description: job.description,
+                    resume_context: profile.resume_context,
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'The AI assistant failed to generate questions.');
+            }
+
+            set({ interviewPrepData: data, isGeneratingPrep: false });
+
+        } catch (err) {
+            console.error("Error generating interview prep:", err);
+            set({ interviewPrepError: err.message, isGeneratingPrep: false });
+        }
+    },
+
     // CRUD Operations
     handleSaveProfile: async (profile) => {
-        const profileData = { profile_name: profile.profile_name, resume_context: profile.resume_context };
-        if (profile.id) { await supabase.from('profiles').update(profileData).eq('id', profile.id); } 
-        else { await supabase.from('profiles').insert([profileData]); }
+        const profileData = {
+            profile_name: profile.profile_name,
+            resume_context: profile.resume_context,
+            full_name: profile.full_name,
+            email: profile.email,
+            phone: profile.phone,
+            linkedin_url: profile.linkedin_url,
+            portfolio_url: profile.portfolio_url,
+            professional_summary: profile.professional_summary,
+        };
+
+        if (profile.id) {
+            await supabase.from('profiles').update(profileData).eq('id', profile.id);
+        } else {
+            await supabase.from('profiles').insert([profileData]);
+        }
         get().addNotification(`Profile saved!`);
         get().fetchProfiles();
     },

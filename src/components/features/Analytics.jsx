@@ -1,95 +1,161 @@
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Target, BarChart2, CheckCircle, XCircle, Award, Briefcase } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Target, User, Search, FileText, Percent, Award } from 'lucide-react';
 
-// A reusable card for displaying a single statistic
-function StatCard({ title, value, icon, color }) {
+// A reusable card for displaying a key statistic
+function StatCard({ title, value, icon, note }) {
     const Icon = icon;
     return (
-        <div className="bg-white p-6 rounded-lg border border-slate-200">
-            <div className="flex items-center">
-                <div className={`p-3 rounded-full mr-4 ${color}`}>
-                    <Icon className="w-6 h-6 text-white" />
-                </div>
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col">
+            <div className="flex items-start justify-between">
                 <div>
                     <p className="text-sm font-medium text-slate-500">{title}</p>
-                    <p className="text-3xl font-bold text-slate-800">{value}</p>
+                    <p className="text-4xl font-bold text-slate-800 mt-1">{value}</p>
                 </div>
+                <div className="p-3 rounded-full bg-sky-100 text-sky-600">
+                    <Icon className="w-6 h-6" />
+                </div>
+            </div>
+            {note && <p className="text-xs text-slate-400 mt-2">{note}</p>}
+        </div>
+    );
+}
+
+// A reusable component for the performance tables
+function PerformanceTable({ title, data, columns, icon }) {
+    const Icon = icon;
+    return (
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <Icon className="w-5 h-5 text-slate-600" />
+                {title}
+            </h3>
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                        <tr>
+                            {columns.map((col, index) => (
+                                <th key={index} scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    {col.header}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                        {data.length > 0 ? data.map((row, rowIndex) => (
+                            <tr key={rowIndex} className="hover:bg-slate-50">
+                                {columns.map((col, colIndex) => (
+                                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                                        {row[col.accessor]}
+                                    </td>
+                                ))}
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan={columns.length} className="text-center py-8 text-slate-500">
+                                    Not enough data to analyze.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
 }
 
-export default function Analytics({ jobs }) {
+
+export default function Analytics({ jobs, profiles, searches }) {
     // --- DATA CALCULATION ---
-    const totalJobs = jobs.length;
-    const statusCounts = jobs.reduce((acc, job) => {
-        const status = job.status || 'Applied';
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-    }, {});
+    const analyticsData = useMemo(() => {
+        const trackedJobs = jobs.filter(job => job.is_tracked);
+        const appliedCount = trackedJobs.length;
+        const interviewingCount = trackedJobs.filter(job => job.status === 'Interviewing').length;
+        const offerCount = trackedJobs.filter(job => job.status === 'Offer').length;
+        
+        // Calculate interview rate, avoiding division by zero
+        const interviewRate = appliedCount > 0 ? ((interviewingCount / appliedCount) * 100).toFixed(1) : "0.0";
 
-    const appliedCount = statusCounts['Applied'] || 0;
-    const interviewingCount = statusCounts['Interviewing'] || 0;
-    const offerCount = statusCounts['Offer'] || 0;
-    const rejectedCount = statusCounts['Rejected'] || 0;
+        // Profile Performance Calculation
+        const profilePerformance = profiles.map(profile => {
+            const jobsForProfile = trackedJobs.filter(job => {
+                const search = searches.find(s => s.id === job.search_id);
+                return search && search.profile_id === profile.id;
+            });
+            const apps = jobsForProfile.length;
+            const interviews = jobsForProfile.filter(j => j.status === 'Interviewing').length;
+            const rate = apps > 0 ? ((interviews / apps) * 100).toFixed(1) + "%" : "N/A";
+            return {
+                name: profile.profile_name,
+                applications: apps,
+                interviews: interviews,
+                interviewRate: rate
+            };
+        });
 
-    // Data for the funnel chart (represented as a bar chart)
-    const funnelData = [
-        { name: 'Applied', value: appliedCount, fill: '#38bdf8' },
-        { name: 'Interviewing', value: interviewingCount, fill: '#a78bfa' },
-        { name: 'Offer', value: offerCount, fill: '#34d399' },
+        // Search Term Performance Calculation
+        const searchPerformance = searches.map(search => {
+            const jobsForSearch = trackedJobs.filter(job => job.search_id === search.id);
+            const apps = jobsForSearch.length;
+            const interviews = jobsForSearch.filter(j => j.status === 'Interviewing').length;
+            const rate = apps > 0 ? ((interviews / apps) * 100).toFixed(1) + "%" : "N/A";
+            return {
+                name: search.search_term,
+                applications: apps,
+                interviews: interviews,
+                interviewRate: rate
+            };
+        });
+
+        return { appliedCount, interviewingCount, offerCount, interviewRate, profilePerformance, searchPerformance };
+    }, [jobs, profiles, searches]);
+
+    const profileColumns = [
+        { header: 'Profile Name', accessor: 'name' },
+        { header: 'Applications', accessor: 'applications' },
+        { header: 'Interviews', accessor: 'interviews' },
+        { header: 'Interview Rate', accessor: 'interviewRate' },
     ];
 
-    // Data for the status pie chart
-    const pieData = [
-        { name: 'Applied', value: appliedCount },
-        { name: 'Interviewing', value: interviewingCount },
-        { name: 'Offer', value: offerCount },
-        { name: 'Rejected', value: rejectedCount },
+    const searchColumns = [
+        { header: 'Search Term', accessor: 'name' },
+        { header: 'Applications', accessor: 'applications' },
+        { header: 'Interviews', accessor: 'interviews' },
+        { header: 'Interview Rate', accessor: 'interviewRate' },
     ];
-    const COLORS = ['#38bdf8', '#a78bfa', '#34d399', '#f87171'];
-
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Your Analytics Dashboard</h2>
+            <h2 className="text-2xl font-bold mb-6">Proactive Career Agent</h2>
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Total Applications" value={totalJobs} icon={Briefcase} color="bg-blue-500" />
-                <StatCard title="Interviews" value={interviewingCount} icon={CheckCircle} color="bg-purple-500" />
-                <StatCard title="Offers" value={offerCount} icon={Award} color="bg-emerald-500" />
-                <StatCard title="Rejections" value={rejectedCount} icon={XCircle} color="bg-red-500" />
+            {/* Section 1: Job Search Funnel */}
+            <div className="mb-8">
+                 <h3 className="text-lg font-semibold text-slate-700 mb-4">Your Job Search Funnel</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard title="Applications Sent" value={analyticsData.appliedCount} icon={FileText} note="Total jobs added to your tracker." />
+                    <StatCard title="Interviews Landed" value={analyticsData.interviewingCount} icon={Target} note="Jobs moved to the 'Interviewing' stage." />
+                    <StatCard title="Job Offers" value={analyticsData.offerCount} icon={Award} note="Jobs moved to the 'Offer' stage." />
+                    <StatCard title="Interview Rate" value={`${analyticsData.interviewRate}%`} icon={Percent} note="The percentage of applications that lead to an interview." />
+                </div>
             </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-6 rounded-lg border border-slate-200">
-                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><BarChart2 className="w-5 h-5 text-slate-600" />Application Funnel</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={funnelData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis type="category" dataKey="name" width={80} />
-                            <Tooltip />
-                            <Bar dataKey="value" barSize={40} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-                <div className="bg-white p-6 rounded-lg border border-slate-200">
-                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-slate-600" />Application Status</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie data={pieData} cx="50%" cy="50%" labelLine={false} outerRadius={120} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
+            {/* Section 2: Profile Performance */}
+            <div className="mb-8">
+                <PerformanceTable 
+                    title="Profile Performance"
+                    data={analyticsData.profilePerformance}
+                    columns={profileColumns}
+                    icon={User}
+                />
+            </div>
+
+            {/* Section 3: Search Term Performance */}
+            <div>
+                 <PerformanceTable 
+                    title="Search Term Performance"
+                    data={analyticsData.searchPerformance}
+                    columns={searchColumns}
+                    icon={Search}
+                />
             </div>
         </div>
     );
